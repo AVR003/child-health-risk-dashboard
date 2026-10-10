@@ -461,7 +461,17 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
     # Structured context for LLM
     dist_name = rec["district"]
     state_name = rec["state"]
-    top_problems = [f"{p['clean_name']} ({p['raw_value']:.1f}%)" for p in rec["top_3_indicators"]]
+
+    top_problems_list = []
+    for p in rec["top_3_indicators"]:
+        top_problems_list.append(f"{p['clean_name']} ({p['raw_value']:.1f}%)")
+    top_problems_str = ", ".join(top_problems_list)
+
+    indicators_list = []
+    for c in ALL_INDICATORS:
+        c_clean = c.replace(" (%)", "")
+        indicators_list.append(f"{c_clean}: {district_row[c]:.1f}%")
+    district_indicators_str = ", ".join(indicators_list)
     
     context_str = (
         f"District: {dist_name}, State: {state_name}\n"
@@ -469,10 +479,11 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
         f"Risk Category: {rec['risk_label']}\n"
         f"State Average CHRS: {state_df['CHRS'].mean():.2f}\n"
         f"National Average CHRS: 33.63\n"
-        f"Top 3 Identified Deficits (by national Z-score): {', '.join(top_problems)}\n"
+        f"Top 3 Identified Deficits (by national Z-score): {top_problems_str}\n"
         f"Rule-Based Recommended Actions: {rec['summary_paragraph']}\n"
-        f"District Indicators: {', '.join([f'{c.replace(' (%)', '')}: {district_row[c]:.1f}%' for c in ALL_INDICATORS])}\n"
+        f"District Indicators: {district_indicators_str}\n"
     )
+
 
     prompt = (
         "You are an expert, empathetic Public Health Policy Assistant for India's NFHS-5 Child Health Dashboard. "
