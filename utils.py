@@ -428,19 +428,19 @@ def get_active_llm_provider(custom_key=None, custom_provider="Auto-Detect"):
         if custom_provider == "Groq" or key.startswith("gsk_"):
             return "Groq", key, "llama-3.3-70b-versatile"
         elif custom_provider == "Gemini" or key.startswith("AIza") or key.startswith("AQ."):
-            return "Gemini", key, "gemini-1.5-flash"
+            return "Gemini", key, "gemini-flash-latest"
         elif custom_provider == "OpenAI" or key.startswith("sk-"):
             return "OpenAI", key, "gpt-4o-mini"
         else:
             if key.startswith("AQ.") or key.startswith("AIza"):
-                return "Gemini", key, "gemini-1.5-flash"
+                return "Gemini", key, "gemini-flash-latest"
             return "Groq", key, "llama-3.3-70b-versatile"
 
     # From secrets / env
     if groq_key:
         return "Groq", groq_key, "llama-3.3-70b-versatile"
     if gemini_key:
-        return "Gemini", gemini_key, "gemini-1.5-flash"
+        return "Gemini", gemini_key, "gemini-flash-latest"
     if openai_key:
         return "OpenAI", openai_key, "gpt-4o-mini"
 
@@ -517,30 +517,34 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
             with urllib.request.urlopen(req, timeout=12) as response:
                 result = json.loads(response.read().decode("utf-8"))
-                return result["choices"][0]["message"]["content"]
-        except Exception as e:
-            # Fall back gracefully to offline engine
+                ans = result["choices"][0]["message"]["content"]
+                return f"{ans}\n\n---\n*🚀 Powered by Groq Llama-3 AI*"
+        except Exception:
             pass
 
-    # 2. GOOGLE GEMINI API (Gemini 1.5 Flash) - Free Tier
+    # 2. GOOGLE GEMINI API (Gemini Flash) - Free Tier
     if provider == "Gemini":
-        try:
-            import json
-            import urllib.request
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            headers = {"Content-Type": "application/json"}
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.4, "maxOutputTokens": 600}
-            }
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
-                result = json.loads(response.read().decode("utf-8"))
-                return result["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as e:
-            pass
+        gemini_models_to_try = [model_name, "gemini-flash-latest", "gemini-2.5-flash", "gemini-1.5-flash"]
+        for m in gemini_models_to_try:
+            try:
+                import json
+                import urllib.request
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+                headers = {"Content-Type": "application/json"}
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"temperature": 0.4, "maxOutputTokens": 600}
+                }
+                req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+                with urllib.request.urlopen(req, timeout=12) as response:
+                    result = json.loads(response.read().decode("utf-8"))
+                    ans = result["candidates"][0]["content"]["parts"][0]["text"]
+                    return f"{ans}\n\n---\n*✨ Powered by Google Gemini AI*"
+            except Exception:
+                continue
 
     # 3. OPENAI API (GPT-4o mini)
+
     if provider == "OpenAI":
         try:
             import json
