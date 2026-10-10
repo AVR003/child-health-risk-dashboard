@@ -71,17 +71,18 @@ $$\\text{Risk Value} = \\text{Risk Indicator Percentage}$$
 The district's overall CHRS score is the unweighted arithmetic mean of all 12 standardized risk values:
 $$\\text{CHRS} = \\frac{1}{12} \\left( \\sum_{i=1}^4 \\text{Risk}_i + \\sum_{j=1}^8 (100 - \\text{Protective}_j) \\right)$$
 
-#### 🎯 Risk Label Stratification (Quartile Boundaries):
-Across the 707 districts, CHRS is stratified into 4 balanced vulnerability categories:
-""")
+#### 🎯 Risk Label Assignment (Defined Score Ranges):
+As defined in the project formulation, each district is assigned a risk category based on predefined CHRS ranges:
 
-quartiles_df = pd.DataFrame([
-    {"Risk Category": "🟢 Low Risk", "CHRS Score Range": "< 29.08", "Districts": 177, "Policy Status": "Sustained maintenance & routine strengthening"},
-    {"Risk Category": "🟡 Medium Risk", "CHRS Score Range": "29.09 – 33.25", "Districts": 177, "Policy Status": "Targeted monitoring of localized bottlenecks"},
-    {"Risk Category": "🟠 High Risk", "CHRS Score Range": "33.27 – 38.15", "Districts": 176, "Policy Status": "Intensified intervention & inter-departmental convergence"},
-    {"Risk Category": "🔴 Very High Risk", "CHRS Score Range": "≥ 38.15", "Districts": 177, "Policy Status": "Emergency mission-mode deployment of health resources"},
-])
-st.table(quartiles_df)
+| CHRS Range | Risk Label | Status / Policy Implication |
+| :---: | :---: | :--- |
+| **0 – 25** | **🟢 Low** | Optimal child health outcomes; sustained routine care |
+| **25 – 50** | **🟡 Medium** | Moderate vulnerability; routine programmatic monitoring |
+| **50 – 75** | **🟠 High** | Elevated vulnerability; intensified inter-departmental convergence |
+| **75 – 100** | **🔴 Very High** | Critical vulnerability; emergency mission-mode resource deployment |
+
+These risk labels serve as the target classification variable for the supervised machine learning models developed in this study.
+""")
 
 st.markdown("---")
 
@@ -116,83 +117,36 @@ st.markdown("---")
 
 st.markdown("""
 ### 🤖 4. Model Comparison Results (Machine Learning Evaluation)
-Below is the evaluation summary of machine learning classification models benchmarked on the 707-district NFHS-5 dataset to predict composite child risk tiers:
+Below is the exact empirical evaluation of all classification models benchmarked in our project notebook on the 707-district dataset:
 """)
 
-# Model Comparison Results Table
+# Model Comparison Results Table from Colab Notebook Cell 111
 model_comparison_data = [
-    {
-        "Model": "Multinomial Logistic Regression",
-        "Accuracy": "86.6%",
-        "Precision (Macro)": "0.86",
-        "Recall (Macro)": "0.86",
-        "F1-Score (Macro)": "0.86",
-        "ROC-AUC": "0.96",
-        "Interpretability": "High (Linear coefficients)",
-        "Notes": "Strong baseline; linear boundaries capture primary indicator shifts."
-    },
-    {
-        "Model": "Support Vector Classifier (RBF Kernel)",
-        "Accuracy": "91.5%",
-        "Precision (Macro)": "0.91",
-        "Recall (Macro)": "0.91",
-        "F1-Score (Macro)": "0.91",
-        "ROC-AUC": "0.98",
-        "Interpretability": "Low (Kernel projection)",
-        "Notes": "Effective non-linear margin separation."
-    },
-    {
-        "Model": "Random Forest Classifier (100 Trees)",
-        "Accuracy": "94.3%",
-        "Precision (Macro)": "0.94",
-        "Recall (Macro)": "0.94",
-        "F1-Score (Macro)": "0.94",
-        "ROC-AUC": "0.99",
-        "Interpretability": "Medium (Feature importances)",
-        "Notes": "Robust to outliers; handles correlated maternal-child covariates."
-    },
-    {
-        "Model": "XGBoost Classifier (Gradient Boosted)",
-        "Accuracy": "95.8%",
-        "Precision (Macro)": "0.96",
-        "Recall (Macro)": "0.96",
-        "F1-Score (Macro)": "0.96",
-        "ROC-AUC": "0.99",
-        "Interpretability": "Medium (SHAP values)",
-        "Notes": "Best performing ensemble; excels at identifying complex multi-indicator vulnerabilities."
-    },
-    {
-        "Model": "LightGBM Classifier",
-        "Accuracy": "95.1%",
-        "Precision (Macro)": "0.95",
-        "Recall (Macro)": "0.95",
-        "F1-Score (Macro)": "0.95",
-        "ROC-AUC": "0.99",
-        "Interpretability": "Medium (Tree splits)",
-        "Notes": "Fast convergence and robust leaf-wise partitioning."
-    },
-    {
-        "Model": "Multi-Layer Perceptron (MLP Neural Net)",
-        "Accuracy": "92.2%",
-        "Precision (Macro)": "0.92",
-        "Recall (Macro)": "0.92",
-        "F1-Score (Macro)": "0.92",
-        "ROC-AUC": "0.98",
-        "Interpretability": "Black Box",
-        "Notes": "Captures non-linear feature representations; requires hyperparameter tuning."
-    },
+    {"Model": "Logistic Regression", "Accuracy": "95.1%", "Precision": "0.955", "Recall": "0.951", "F1 Score": "0.951", "Notes": "Highest overall accuracy with standardized feature scaling"},
+    {"Model": "Support Vector Machine (RBF Kernel)", "Accuracy": "88.7%", "Precision": "0.892", "Recall": "0.887", "F1 Score": "0.886", "Notes": "C=5, gamma='scale', balanced class weights"},
+    {"Model": "K-Nearest Neighbors (KNN)", "Accuracy": "85.9%", "Precision": "0.858", "Recall": "0.859", "F1 Score": "0.857", "Notes": "k=7 with distance-weighted neighbors"},
+    {"Model": "XGBoost (Grid Search Tuned)", "Accuracy": "82.4%", "Precision": "0.826", "Recall": "0.824", "F1 Score": "0.822", "Notes": "Optimized learning rate, max depth & subsampling"},
+    {"Model": "XGBoost (Randomized Search Tuned)", "Accuracy": "82.4%", "Precision": "0.824", "Recall": "0.824", "F1 Score": "0.823", "Notes": "Stochastic parameter exploration"},
+    {"Model": "XGBoost (Default)", "Accuracy": "81.7%", "Precision": "0.824", "Recall": "0.817", "F1 Score": "0.816", "Notes": "Default gradient boosting baseline"},
+    {"Model": "Tuned Random Forest", "Accuracy": "80.3%", "Precision": "0.805", "Recall": "0.803", "F1 Score": "0.800", "Notes": "Ensemble tuning improves generalized decision boundaries"},
+    {"Model": "Random Forest (Default)", "Accuracy": "79.6%", "Precision": "0.799", "Recall": "0.796", "F1 Score": "0.792", "Notes": "100 estimators, bagging variance reduction"},
+    {"Model": "Tuned Decision Tree", "Accuracy": "69.7%", "Precision": "0.689", "Recall": "0.697", "F1 Score": "0.689", "Notes": "Grid Search tuned tree depth"},
+    {"Model": "Decision Tree (Default)", "Accuracy": "69.0%", "Precision": "0.689", "Recall": "0.690", "F1 Score": "0.689", "Notes": "Unpruned baseline decision tree"},
 ]
 
 model_df = pd.DataFrame(model_comparison_data)
 st.dataframe(model_df, use_container_width=True, hide_index=True)
 
-st.info("""
-💡 **Why deploy a Rule-Based Engine alongside ML Models?**
-While tree-based models like XGBoost and Random Forest achieve over 94% accuracy in classifying risk tiers, public health decision-makers require **100% transparent, deterministic, and interpretable policy directives**. 
-The rule-based Z-score engine guarantees that every recommended action is mathematically traceable directly to specific NFHS-5 indicator deficits.
+st.markdown("""
+### 🔍 5. Explainability (SHAP & LIME) and Clustering
+In addition to classification, our project incorporates cutting-edge model interpretability and unsupervised clustering:
+- **SHAP (SHapley Additive exPlanations):** Explains global feature importance using tree-based SHAP values on the Tuned Random Forest model, revealing which health determinants contribute most to risk classification.
+- **LIME (Local Interpretable Model-agnostic Explanations):** Explains local district-level predictions, showing the positive and negative weights of individual indicators for a selected district.
+- **Unsupervised Clustering (Maharashtra):** Applied **K-Means Clustering** (Elbow method) and **Hierarchical Clustering** (Ward's linkage dendrogram) to identify natural district groupings across Maharashtra—highlighting vulnerable clusters such as the Nandurbar, Dhule, and Jalgaon belt.
 """)
 
 st.markdown("---")
+
 
 st.markdown("""
 ### 📚 5. Data Integrity & Verification

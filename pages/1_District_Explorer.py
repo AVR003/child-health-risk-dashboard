@@ -142,7 +142,8 @@ with header_col3:
 st.markdown("**Risk Score Spectrum (0 = Low Risk, 100 = Critical Vulnerability):**")
 progress_val = min(max(chrs_score / 100.0, 0.0), 1.0)
 st.progress(progress_val)
-st.caption(f"Score: **{chrs_score:.2f}** | Quartile Benchmark: Low (<29.1) · Medium (29.1–33.3) · High (33.3–38.2) · Very High (≥38.2)")
+st.caption(f"Score: **{chrs_score:.2f} / 100** | Defined Ranges: Low (0–25) · Medium (25–50) · High (50–75) · Very High (75–100)")
+
 
 # ==============================================================================
 # MAIN PROBLEM AREAS & RULE-BASED POLICY DIRECTIVE
