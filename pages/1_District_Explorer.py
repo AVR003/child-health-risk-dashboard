@@ -153,6 +153,12 @@ st.markdown("### 🚨 Main Problem Areas & Priority Policy Actions")
 prob_cols = st.columns(3)
 for idx, item in enumerate(rec["top_3_indicators"]):
     with prob_cols[idx]:
+        # Calculate plain-English gap vs national average
+        raw_val = item["raw_value"]
+        nat_avg = item["nat_raw_mean"]
+        gap = raw_val - nat_avg
+        gap_sign = "+" if gap > 0 else ""
+
         st.markdown(f"""
         <div class="problem-box">
             <div style="font-size: 0.85rem; font-weight: 700; color: #c2410c; text-transform: uppercase;">
@@ -162,10 +168,10 @@ for idx, item in enumerate(rec["top_3_indicators"]):
                 {item['clean_name']}
             </div>
             <div style="font-size: 1.35rem; font-weight: 800; color: #ea580c;">
-                {item['raw_value']:.2f}%
+                {raw_val:.2f}%
             </div>
             <div style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">
-                National Avg: <b>{item['nat_raw_mean']:.1f}%</b> | Deviation Z-score: <b>+{item['z_score']:.2f}σ</b>
+                National Benchmark: <b>{nat_avg:.1f}%</b> · Gap: <b>{gap_sign}{gap:.1f}% pts</b>
             </div>
             <hr style="margin: 8px 0; border: none; border-top: 1px dashed #fdba74;">
             <div style="font-size: 0.85rem; color: #334155;">
@@ -173,6 +179,7 @@ for idx, item in enumerate(rec["top_3_indicators"]):
             </div>
         </div>
         """, unsafe_allow_html=True)
+
 
 # Generated Rule-based Summary Directive
 st.markdown(f"""

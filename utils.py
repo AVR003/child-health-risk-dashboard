@@ -291,12 +291,11 @@ def answer_district_query(user_query, district_row, df, benchmarks=None, custom_
             f"**Risk Assessment for {dist_name} ({state_name}):**\n\n"
             f"- **CHRS Score:** {chrs:.2f} / 100 ({risk_label})\n"
             f"- **State Average CHRS:** {state_avg_chrs:.2f} / 100\n\n"
-            f"Through national Z-score normalization against all 707 districts, **{dist_name}** exhibits the highest vulnerability in three critical areas:\n"
+            f"Compared across all 707 districts in India, **{dist_name}** exhibits the highest vulnerability in three critical areas:\n"
         )
         for i, item in enumerate(top_3, 1):
             nat_avg = item["nat_raw_mean"]
-            direction = "worse than" if (item["is_risk_type"] and item["raw_value"] > nat_avg) or (not item["is_risk_type"] and item["raw_value"] < nat_avg) else "relative to"
-            text += f"{i}. **{item['clean_name']}**: Current level is **{item['raw_value']:.1f}%** (National avg: {nat_avg:.1f}%, Z-score: +{item['z_score']:.2f}).\n"
+            text += f"{i}. **{item['clean_name']}**: Current level is **{item['raw_value']:.1f}%** (National avg: {nat_avg:.1f}%).\n"
         text += f"\n💡 *Recommendation summary:* {rec['summary_paragraph']}"
         return text
 
@@ -304,13 +303,14 @@ def answer_district_query(user_query, district_row, df, benchmarks=None, custom_
     if any(k in q for k in ["improve", "priority", "first", "action", "do first", "intervene", "policy", "recommend"]):
         text = (
             f"**Recommended Action Priorities for {dist_name}:**\n\n"
-            f"Based on the highest risk z-scores, targeted interventions should be prioritized in this exact order:\n\n"
+            f"Based on the greatest deficits relative to national standards, targeted interventions should be prioritized in this exact order:\n\n"
         )
         for i, item in enumerate(top_3, 1):
             text += f"**Priority {i}: Address {item['clean_name']} (Currently {item['raw_value']:.1f}%)**\n"
             text += f"- *Mandated policy response:* {item['action'].capitalize()}.\n\n"
         text += f"📌 **Full Policy Directive:**\n> {rec['summary_paragraph']}"
         return text
+
 
     # 3. How does it compare to state average / state comparison
     if any(k in q for k in ["compare", "state average", "state avg", "state", "benchmark", "better or worse"]):
