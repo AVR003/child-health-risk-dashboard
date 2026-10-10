@@ -285,6 +285,32 @@ def answer_district_query(user_query, district_row, df, benchmarks=None, custom_
     # ================= Offline Rule-Based Engine =================
     q = user_query.lower().strip()
 
+    # 0. Conversational greetings & Casual pleasantries
+    greetings = {"hey", "hi", "hello", "good morning", "good evening", "good afternoon", "greetings", "sup", "howdy", "hola"}
+    words = [w.strip("!.,? ") for w in q.split()]
+    if (len(words) <= 3 and any(w in greetings for w in words)) or q in ["hey", "hi", "hello", "hi there", "hello there"]:
+        return (
+            f"👋 Hello! I am your Child Health Policy Assistant for **{dist_name} ({state_name})**.\n\n"
+            f"- **CHRS Score:** **{chrs:.2f} / 100** ({risk_label})\n"
+            f"- **Top Priority Concern:** **{top_3[0]['clean_name']}** ({top_3[0]['raw_value']:.1f}%)\n\n"
+            f"How can I help you today? You can ask me:\n"
+            f"- *'Why is this district at risk?'*\n"
+            f"- *'What should be improved first?'*\n"
+            f"- *'How does it compare to the state average?'*\n"
+            f"- *'What is the anaemia or stunting rate?'*"
+        )
+
+    # 0b. Identity / Capabilities query
+    if any(k in q for k in ["who are you", "what can you do", "help me", "how to use", "what is this"]):
+        return (
+            f"I am the **Child Health Policy Assistant** for **{dist_name} ({state_name})**.\n\n"
+            f"I help health officials, administrators, and researchers analyze:\n"
+            f"1. **District Vulnerability**: Explaining why {dist_name} scored {chrs:.2f}/100 on the Child Health Risk Score.\n"
+            f"2. **Critical Gaps**: Highlighting top bottlenecks like {top_3[0]['clean_name']} and {top_3[1]['clean_name']}.\n"
+            f"3. **Targeted Interventions**: Formulating actionable policy responses based on NFHS-5 data.\n"
+            f"4. **Benchmarking**: Comparing {dist_name} against {state_name} and national averages."
+        )
+
     # 1. Why is this district high / medium / low risk?
     if any(k in q for k in ["why", "reason", "cause", "risk factor", "why high", "why low", "why medium"]):
         text = (
@@ -428,19 +454,19 @@ def get_active_llm_provider(custom_key=None, custom_provider="Auto-Detect"):
         if custom_provider == "Groq" or key.startswith("gsk_"):
             return "Groq", key, "llama-3.3-70b-versatile"
         elif custom_provider == "Gemini" or key.startswith("AIza") or key.startswith("AQ."):
-            return "Gemini", key, "gemini-flash-latest"
+            return "Gemini", key, "gemini-3.1-flash-lite-preview"
         elif custom_provider == "OpenAI" or key.startswith("sk-"):
             return "OpenAI", key, "gpt-4o-mini"
         else:
             if key.startswith("AQ.") or key.startswith("AIza"):
-                return "Gemini", key, "gemini-flash-latest"
+                return "Gemini", key, "gemini-3.1-flash-lite-preview"
             return "Groq", key, "llama-3.3-70b-versatile"
 
     # From secrets / env
     if groq_key:
         return "Groq", groq_key, "llama-3.3-70b-versatile"
     if gemini_key:
-        return "Gemini", gemini_key, "gemini-flash-latest"
+        return "Gemini", gemini_key, "gemini-3.1-flash-lite-preview"
     if openai_key:
         return "OpenAI", openai_key, "gpt-4o-mini"
 
@@ -484,12 +510,12 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
         f"District Indicators: {district_indicators_str}\n"
     )
 
-
     prompt = (
-        "You are an expert, empathetic Public Health Policy Assistant for India's NFHS-5 Child Health Dashboard. "
-        "Answer the user's question accurately using ONLY the district data and recommendation engine context provided below. "
-        "Provide actionable, culturally relevant public health advice in plain English. Avoid ML jargon. Cite exact percentages when helpful.\n\n"
-        f"--- CONTEXT DATA ---\n{context_str}\n\n"
+        "You are an expert, friendly Public Health Policy Assistant for India's NFHS-5 Child Health Dashboard. "
+        "CONVERSATIONAL INSTRUCTIONS:\n"
+        "1. If the user is just saying hello (e.g. 'hey', 'hi', 'hello', 'good morning', 'who are you'), reply warmly in 1-2 friendly sentences. Briefly introduce yourself as the policy assistant for this district, state its CHRS score and vulnerability level, and offer to answer questions about health priorities, policy interventions, or state comparisons.\n"
+        "2. For specific questions about health, indicators, risk causes, or interventions, provide concise, clear, and actionable public health answers in plain English. Avoid statistical jargon. Cite exact district percentages and state comparisons from the context below when helpful.\n\n"
+        f"--- CONTEXT DATA FOR {dist_name.upper()} ---\n{context_str}\n\n"
         f"USER QUESTION: {user_query}\n\n"
         "ANSWER:"
     )
@@ -515,16 +541,16 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
                 "max_tokens": 600
             }
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
+            with urllib.request.urlopen(req, timeout=8) as response:
                 result = json.loads(response.read().decode("utf-8"))
                 ans = result["choices"][0]["message"]["content"]
                 return f"{ans}\n\n---\n*🚀 Powered by Groq Llama-3 AI*"
         except Exception:
             pass
 
-    # 2. GOOGLE GEMINI API (Gemini Flash) - Free Tier
+    # 2. GOOGLE GEMINI API (Gemini 3.1 Flash Lite) - Fast & Free Tier
     if provider == "Gemini":
-        gemini_models_to_try = [model_name, "gemini-flash-latest", "gemini-2.5-flash", "gemini-1.5-flash"]
+        gemini_models_to_try = [model_name, "gemini-3.1-flash-lite-preview", "gemini-3.1-flash-lite", "gemini-flash-latest"]
         for m in gemini_models_to_try:
             try:
                 import json
@@ -536,7 +562,7 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
                     "generationConfig": {"temperature": 0.4, "maxOutputTokens": 600}
                 }
                 req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-                with urllib.request.urlopen(req, timeout=12) as response:
+                with urllib.request.urlopen(req, timeout=8) as response:
                     result = json.loads(response.read().decode("utf-8"))
                     ans = result["candidates"][0]["content"]["parts"][0]["text"]
                     return f"{ans}\n\n---\n*✨ Powered by Google Gemini AI*"
@@ -544,7 +570,6 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
                 continue
 
     # 3. OPENAI API (GPT-4o mini)
-
     if provider == "OpenAI":
         try:
             import json
@@ -564,10 +589,10 @@ def try_llm_generation(user_query, district_row, rec, state_df, benchmarks, cust
                 "max_tokens": 600
             }
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
+            with urllib.request.urlopen(req, timeout=8) as response:
                 result = json.loads(response.read().decode("utf-8"))
                 return result["choices"][0]["message"]["content"]
-        except Exception as e:
+        except Exception:
             pass
 
     return None

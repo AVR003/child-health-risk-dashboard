@@ -306,46 +306,14 @@ st.markdown("---")
 st.markdown("### 💬 Child Health Policy Chatbot")
 st.caption(f"Ask questions about child health status and priority actions for **{selected_district}**")
 
-# Optional LLM integration settings (Groq / Gemini / Offline)
-with st.expander("⚙️ Connect Groq API or Gemini API (Optional)", expanded=False):
-    st.write(
-        "By default, the chatbot runs **100% offline using the rule-based engine**. "
-        "You can optionally connect a free **Groq API Key** (Llama 3.3 70B) or **Gemini API Key** (Gemini 1.5 Flash) for free-form conversational answers:"
-    )
-    llm_col1, llm_col2 = st.columns([1, 2])
-    with llm_col1:
-        custom_provider = st.selectbox(
-            "AI Provider",
-            options=["Auto-Detect", "Groq", "Gemini", "OpenAI"],
-            index=0,
-            key="llm_provider_choice",
-            help="Auto-detects from key prefix (gsk_ = Groq, AIza = Gemini, sk- = OpenAI)"
-        )
-    with llm_col2:
-        custom_key_input = st.text_input(
-            "Enter API Key",
-            type="password",
-            value=st.session_state.get("custom_llm_key", ""),
-            placeholder="Paste Groq key (gsk_...) or Gemini key (AIza...)",
-            help="Key is stored only in session memory during your visit",
-            key="llm_key_input_field"
-        )
-        if custom_key_input:
-            st.session_state["custom_llm_key"] = custom_key_input.strip()
-
-    # Display active engine status
-    active_prov, _, active_model = utils.get_active_llm_provider(
-        st.session_state.get("custom_llm_key"),
-        custom_provider
-    )
-    if active_prov == "Groq":
-        st.success(f"🚀 **Active Engine: Groq Cloud ({active_model})** — Ultra-fast AI answers enabled!")
-    elif active_prov == "Gemini":
-        st.success(f"✨ **Active Engine: Google Gemini ({active_model})** — Google AI Studio connected!")
-    elif active_prov == "OpenAI":
-        st.success(f"🧠 **Active Engine: OpenAI ({active_model})**")
-    else:
-        st.info("⚡ **Active Engine: Offline Rule-Based Engine** (Deterministic, instant & runs without any key).")
+# Active engine indicator badge
+active_prov, _, active_model = utils.get_active_llm_provider()
+if active_prov == "Gemini":
+    st.caption(f"✨ *Connected to Google Gemini AI for conversational answers & policy advice.*")
+elif active_prov == "Groq":
+    st.caption(f"🚀 *Connected to Groq Cloud AI for conversational answers & policy advice.*")
+else:
+    st.caption("⚡ *Powered by Offline Public Health Rule-Based Engine.*")
 
 # Manage district chat session state
 session_chat_key = f"chat_messages_{selected_district}"
@@ -403,9 +371,7 @@ if query_to_process:
                 query_to_process,
                 dist_row,
                 df,
-                benchmarks,
-                custom_key=st.session_state.get("custom_llm_key"),
-                custom_provider=st.session_state.get("llm_provider_choice", "Auto-Detect")
+                benchmarks
             )
             st.markdown(reply)
             st.session_state[session_chat_key].append({"role": "assistant", "content": reply})
