@@ -1,0 +1,19 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Secrets & Local Configurations (Keep keys secure)
+.streamlit/secrets.toml
+secrets.toml
+.env
+
+# OS Files
+.DS_Store
+Thumbs.db
